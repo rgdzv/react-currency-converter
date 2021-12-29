@@ -1,11 +1,14 @@
 export interface Countries {
-  currencies: [
-    {
-      code: string,
+  currencies: {
+    [key: string] : {
       name: string,
       symbol: string
     }
-  ],
-  name: string,
-  flag: string
+  },
+  name: {
+    common: string
+  },
+  flags: {
+    svg: string
+  }
 }

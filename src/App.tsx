@@ -34,7 +34,7 @@ const App: React.FC = () => {
   const [amountInFromCurrency, setAmountInFromCurrency] = useState(true)
   const [exchangeRate, setExchangeRate] = useState(0)
 
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   let fromAmount, toAmount
@@ -48,12 +48,14 @@ const App: React.FC = () => {
 
   const handleSetFromCurrency = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setFromCountryOption(e.target.value)
-    countries.map(country => {
-      if (e.target.value === country.name){
-        setFromCurrencyShortName(country.currencies[0].code)
-        setFromCurrencySymbol(country.currencies[0].symbol)
-        setFromCountryFlag(country.flag)
-        setFromCurrencyFullName(country.currencies[0].name)
+    const countriesCopy = countries.slice(0)
+    countriesCopy.forEach(country => {
+      if (e.target.value === country.name.common){
+        const key = Object.keys(country.currencies)[0]
+        setFromCurrencyShortName(key)
+        setFromCurrencySymbol(country.currencies[key].symbol)
+        setFromCountryFlag(country.flags.svg)
+        setFromCurrencyFullName(country.currencies[key].name)
       }
     })
     setError('')
@@ -61,12 +63,14 @@ const App: React.FC = () => {
 
   const handleSetToCurrency = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setToCountryOption(e.target.value)
-    countries.map(country => {
-      if (e.target.value === country.name){
-        setToCurrencyShortName(country.currencies[0].code)
-        setToCurrencySymbol(country.currencies[0].symbol)
-        setToCountryFlag(country.flag)
-        setToCurrencyFullName(country.currencies[0].name)
+    const countriesCopy = countries.slice(0)
+    countriesCopy.forEach(country => {
+      if (e.target.value === country.name.common){
+        const key = Object.keys(country.currencies)[0]
+        setToCurrencyShortName(key)
+        setToCurrencySymbol(country.currencies[key].symbol)
+        setToCountryFlag(country.flags.svg)
+        setToCurrencyFullName(country.currencies[key].name)
       }
     })
     setError('')
@@ -84,35 +88,43 @@ const App: React.FC = () => {
 
   const fetchData = async () => {
     try {
-      setLoading(true)
       const currenciesResponse = await axios.get('https://api.frankfurter.app/currencies')
       const currenciesData = await currenciesResponse.data
-      const countriesResponse = await axios.get('https://restcountries.eu/rest/v2/all')
+      const countriesResponse = await axios.get('https://restcountries.com/v3.1/all')
       const countriesData: Countries[] = await countriesResponse.data
-      const filteredCountriesData = countriesData.filter(country => {
-        const { currencies: [{ code }]} = country
-        return currenciesData[code]
-      })
-      setCountries(filteredCountriesData)
-      setFromCountryOption(filteredCountriesData[100].name)
-      setFromCurrencySymbol(filteredCountriesData[100].currencies[0].symbol)
-      setFromCurrencyShortName(filteredCountriesData[100].currencies[0].code)
-      setFromCountryFlag(filteredCountriesData[100].flag)
-      setFromCurrencyFullName(filteredCountriesData[100].currencies[0].name)
-  
-      setToCountryOption(filteredCountriesData[79].name)
-      setToCurrencySymbol(filteredCountriesData[79].currencies[0].symbol)
-      setToCurrencyShortName(filteredCountriesData[79].currencies[0].code)
-      setToCountryFlag(filteredCountriesData[79].flag)
-      setToCurrencyFullName(filteredCountriesData[79].currencies[0].name)
 
       const baseCurrencyResponse = await axios.get(`https://api.frankfurter.app/latest?from=USD`)
       const baseCurrencyResponceData = await baseCurrencyResponse.data.rates
       const filteredBaseCurrency = Object.keys(baseCurrencyResponceData)[26]
+
+      const countriesWithCurrency = countriesData.filter(item => item.currencies)
+      const filteredCountriesData = countriesWithCurrency.filter(country => {
+        const key = Object.keys(country.currencies)[0]
+        return currenciesData[key]
+      })
+      const sortedCountriesData = filteredCountriesData.sort((a, b) => a.name.common > b.name.common ? 1 : a.name.common < b.name.common ? -1 : 0)
+
+      setCountries(sortedCountriesData)
+
+      const firstDefaultCurrencyKey = Object.keys(sortedCountriesData[95].currencies)[0]
+      const secondDefaultCurrencyKey = Object.keys(sortedCountriesData[72].currencies)[0]
+
+      setFromCountryOption(sortedCountriesData[95].name.common)
+      setFromCurrencySymbol(sortedCountriesData[95].currencies[firstDefaultCurrencyKey].symbol)
+      setFromCurrencyShortName(firstDefaultCurrencyKey)
+      setFromCountryFlag(sortedCountriesData[95].flags.svg)
+      setFromCurrencyFullName(sortedCountriesData[95].currencies[firstDefaultCurrencyKey].name)
+
+      setToCountryOption(sortedCountriesData[72].name.common)
+      setToCurrencySymbol(sortedCountriesData[72].currencies[secondDefaultCurrencyKey].symbol)
+      setToCurrencyShortName(secondDefaultCurrencyKey)
+      setToCountryFlag(sortedCountriesData[72].flags.svg)
+      setToCurrencyFullName(sortedCountriesData[72].currencies[secondDefaultCurrencyKey].name)
       setExchangeRate(baseCurrencyResponceData[filteredBaseCurrency])
       setLoading(false)
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message)
+      setLoading(false)
     }
   }
 
@@ -125,8 +137,9 @@ const App: React.FC = () => {
         setToFooterCurrencyRate(parseFloat((1 / convertedCurrenciesResponseData[toCurrencyShortName]).toFixed(2)))
         setExchangeRate(convertedCurrenciesResponseData[toCurrencyShortName])
       }
-    } catch(err) {
-      setError(err.message)
+    } catch(err: any) {
+      setError('Please, convert different currencies!')
+      setLoading(false)
     }
   }
 

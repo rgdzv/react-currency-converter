@@ -29,23 +29,24 @@ const Card: React.FC<CardProps> = ({
   currencyFooterName, 
   footerCurrencyRate 
 }) => {
+  const finalOption = countries && countries.map((country) => (
+    <option 
+      key={country.name.common} 
+      value={country.name.common}
+    >
+      {country.name.common.length > 25 
+        ? 
+          country.name.common.slice(0,30) + '...' 
+        : 
+          country.name.common
+      }
+    </option> 
+  ))
   return (
     <div className="card">
       <div className="currency__country">
         <select value={defaultCountry} onChange={changeSelectValue}>
-          {countries && countries.map((country) => (
-            <option 
-              key={country.name} 
-              value={country.name}
-            >
-              {country.name.length > 25 
-                ? 
-                  country.name.slice(0,30) + '...' 
-                : 
-                  country.name
-              }
-            </option> 
-          ))}
+          {finalOption}
         </select>
       </div>
       <div className="currency__content">
